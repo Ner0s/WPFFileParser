@@ -2,6 +2,7 @@
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -18,7 +19,7 @@ namespace FileParser
             InitializeComponent();
         }
 
-        private async void BrowseBtn_Click(object sender, RoutedEventArgs e)
+        private void BrowseBtn_Click(object sender, RoutedEventArgs e)
         {
 
             // Create OpenFileDialog
@@ -27,25 +28,16 @@ namespace FileParser
             openFileDlg.DefaultExt = ".txt";
             openFileDlg.Filter = "Text documents (.txt)|*.txt";
             openFileDlg.InitialDirectory = @"C:\";
-            BrowseBtn.Visibility = Visibility.Collapsed;
-            FileNameTextBox.Visibility = Visibility.Collapsed;
-            Task task = Task.Run(() =>
-                LoadFile(this, result, openFileDlg)
-            );
-            await task;
-            BrowseBtn.Visibility = Visibility.Visible;
-            FileNameTextBox.Visibility = Visibility.Visible;
 
-        }
-
-        private void LoadFile(MainWindow mainWindow, bool? result, OpenFileDialog openFileDlg)
-        {
             if (result == true)
             {
                 try
                 {
+                    BrowseBtn.Visibility = Visibility.Collapsed;
+                    FileNameTextBox.Visibility = Visibility.Collapsed;
                     ProgressBarStatus.Visibility = Visibility.Visible;
                     CancelBtn.Visibility = Visibility.Visible;
+
                     Stream myStream;
                     if ((myStream = openFileDlg.OpenFile()) != null)
                     {
@@ -53,51 +45,63 @@ namespace FileParser
                         {
                             string filename = openFileDlg.FileName;
                             FileNameTextBox.Text = filename;
-                            string[] filelines = File.ReadAllLines(filename);
-                            Window_ContentRendered(this, null);
-                            ParseFile(filelines);
+                            string[] fileLines = File.ReadAllLines(filename);
+
+                            BackgroundWorker worker = new BackgroundWorker
+                            {
+                                // tell the background worker it can report progress
+                                WorkerReportsProgress = true
+                            };
+
+                            // add our event handlers
+                            worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(RunWorkerCompleted);
+                            worker.ProgressChanged += new ProgressChangedEventHandler(ProgressChanged);
+                            worker.DoWork += new DoWorkEventHandler(DoWork);
+
+                            // start the worker thread
+                            worker.RunWorkerAsync(fileLines);
                         }
                     }
+
                     ProgressBarStatus.Visibility = Visibility.Collapsed;
                     CancelBtn.Visibility = Visibility.Collapsed;
+                    BrowseBtn.Visibility = Visibility.Visible;
+                    FileNameTextBox.Visibility = Visibility.Visible;
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show("Error: Could not read file from disk. Original error: " + ex.Message);
                 }
             }
+
         }
 
-        private void ParseFile(string[] filelines)
+        private void ParseLines(string line)
         {
-            foreach (string line in filelines)
+            //MessageBox.Show(line);
+        }
+
+        private void DoWork(object sender, DoWorkEventArgs e)
+        {
+            // get a reference to the worker that started this request
+            BackgroundWorker workerSender = sender as BackgroundWorker;
+
+            // get a node list from agrument passed to RunWorkerAsync
+            string[] lines = e.Argument as string[];
+
+            for (int i = 0; i < lines.Count(); i++)
             {
-                //MessageBox.Show(line);
+                ParseLines(lines[i]);
+                workerSender.ReportProgress(i != 0 ? lines.Count() / i : 0);
             }
         }
 
-        private void Window_ContentRendered(object sender, EventArgs e)
+        private void RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            BackgroundWorker worker = new BackgroundWorker
-            {
-                WorkerReportsProgress = true
-            };
-            worker.DoWork += Worker_DoWork;
-            worker.ProgressChanged += Worker_ProgressChanged;
-
-            worker.RunWorkerAsync();
+            // do something after work is completed     
         }
 
-        private void Worker_DoWork(object sender, DoWorkEventArgs e)
-        {
-            for (int i = 0; i < 100; i++)
-            {
-                (sender as BackgroundWorker).ReportProgress(i);
-                Thread.Sleep(100);
-            }
-        }
-
-        private void Worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        public void ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             ProgressBarStatus.Value = e.ProgressPercentage;
         }
