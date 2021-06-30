@@ -2,9 +2,9 @@
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using ParseTextLib;
+using System.Collections.Generic;
 
 namespace FileParser
 {
@@ -13,6 +13,7 @@ namespace FileParser
     /// </summary>
     public partial class MainWindow : Window
     {
+        private WordCounter wordCounter;
         public MainWindow()
         {
             InitializeComponent();
@@ -20,78 +21,79 @@ namespace FileParser
 
         private void BrowseBtn_Click(object sender, RoutedEventArgs e)
         {
+            if (wordCounter != null)
+            {
+                MessageBox.Show("Error: Already running.");
+                return;
+            }
 
             // Create OpenFileDialog
             OpenFileDialog openFileDlg = new OpenFileDialog();
-            bool? result = openFileDlg.ShowDialog();
             openFileDlg.DefaultExt = ".txt";
             openFileDlg.Filter = "Text documents (.txt)|*.txt";
-            openFileDlg.InitialDirectory = @"C:\";
 
-            if (result == true)
+            if (openFileDlg.ShowDialog() != true)
             {
+                return;
+            }
+
+            //BrowseBtn.Visibility = Visibility.Collapsed;
+            //FileNameTextBox.Visibility = Visibility.Collapsed;
+            //ProgressBarStatus.Visibility = Visibility.Visible;
+            //CancelBtn.Visibility = Visibility.Visible;
+                   
+            string fileName = openFileDlg.FileName;
+            FileNameTextBox.Text = fileName;
+
+            wordCounter = new WordCounter();
+
+            // add our event handlers
+            wordCounter.RunWorkerCompleted += new RunWorkerCompletedEventHandler(RunWorkerCompleted);
+            wordCounter.ProgressChanged += new ProgressChangedEventHandler(ProgressChanged);
+                            
+            // start the worker thread
+            wordCounter.RunWorkerAsync(fileName);
+                       
+            //ProgressBarStatus.Visibility = Visibility.Collapsed;
+            //CancelBtn.Visibility = Visibility.Collapsed;
+            //BrowseBtn.Visibility = Visibility.Visible;
+            //FileNameTextBox.Visibility = Visibility.Visible;
+        }
+
+        
+        private void RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (wordCounter.result != null)
+            {
+                SaveFileDialog saveFileDlg = new SaveFileDialog();
+                saveFileDlg.DefaultExt = ".txt";
+                saveFileDlg.Filter = "Text documents (.txt)|*.txt";
+           
+                if (saveFileDlg.ShowDialog() != true)
+                {
+                    return;
+                }
+
                 try
                 {
-                    //BrowseBtn.Visibility = Visibility.Collapsed;
-                    //FileNameTextBox.Visibility = Visibility.Collapsed;
-                    //ProgressBarStatus.Visibility = Visibility.Visible;
-                    //CancelBtn.Visibility = Visibility.Visible;
-
-                    Stream myStream;
-                    if ((myStream = openFileDlg.OpenFile()) != null)
+                    using (StreamWriter writer = File.CreateText(saveFileDlg.FileName))
                     {
-                        using (myStream)
+                        foreach (KeyValuePair<string, uint> pair in wordCounter.result)
                         {
-                            string filename = openFileDlg.FileName;
-                            FileNameTextBox.Text = filename;
-                            string[] fileLines = File.ReadAllLines(filename);
-
-                            BackgroundWorker worker = new BackgroundWorker
-                            {
-                                // tell the background worker it can report progress
-                                WorkerReportsProgress = true
-                            };
-
-                            // add our event handlers
-                            worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(RunWorkerCompleted);
-                            worker.ProgressChanged += new ProgressChangedEventHandler(ProgressChanged);
-                            worker.DoWork += new DoWorkEventHandler(DoWork);
-
-                            // start the worker thread
-                            worker.RunWorkerAsync(fileLines);
+                            writer.WriteLine("{0}: {1}", pair.Key, pair.Value);
                         }
                     }
-
-                    //ProgressBarStatus.Visibility = Visibility.Collapsed;
-                    //CancelBtn.Visibility = Visibility.Collapsed;
-                    //BrowseBtn.Visibility = Visibility.Visible;
-                    //FileNameTextBox.Visibility = Visibility.Visible;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Error: Could not read file from disk. Original error: " + ex.Message);
+                    MessageBox.Show("Error: Could not save file to disk. Original error: " + ex.Message);
                 }
             }
-
-        }
-        private void DoWork(object sender, DoWorkEventArgs e)
-        {
-            // get a reference to the worker that started this request
-            BackgroundWorker workerSender = sender as BackgroundWorker;
-
-            // get a node list from agrument passed to RunWorkerAsync
-            string[] lines = e.Argument as string[];
-
-            for (int i = 0; i < lines.Count(); i++)
+            else if (wordCounter.exception != null)
             {
-                new ParseLines(lines[i]);
-                workerSender.ReportProgress(i != 0 ? lines.Count() / i : 0);
+                MessageBox.Show("Error: Could not process file. Original Error: " + wordCounter.exception.Message);
             }
-        }
-
-        private void RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            // do something after work is completed     
+            wordCounter = null;
         }
 
         public void ProgressChanged(object sender, ProgressChangedEventArgs e)
