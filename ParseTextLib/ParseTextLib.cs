@@ -2,6 +2,8 @@
 using System.IO;
 using System.Collections.Generic;
 using System;
+using System.Threading;
+using System.Diagnostics;
 
 namespace ParseTextLib
 {
@@ -13,6 +15,7 @@ namespace ParseTextLib
         {
             // tell the background worker it can report progress
             WorkerReportsProgress = true;
+            WorkerSupportsCancellation = true;
             DoWork += new DoWorkEventHandler(DoMyWork);
         }
 
@@ -30,6 +33,7 @@ namespace ParseTextLib
                 {
                     result = new Dictionary<string, uint>();
                     string line;
+                    DateTime lastUpdate = DateTime.Now;
                     while ((line = reader.ReadLine()) != null)
                     {
                         foreach (string word in line.Split(' '))
@@ -47,6 +51,22 @@ namespace ParseTextLib
                             {
                                 result.Add(trimmedWord, 1);
                             }
+                            if ((DateTime.Now - lastUpdate).TotalMilliseconds >= 100)
+                            {
+                                workerSender.ReportProgress((int)(
+                                    (double)reader.BaseStream.Position /
+                                    (double)reader.BaseStream.Length *
+                                    100.0d
+                                ));
+                                lastUpdate = DateTime.Now;
+                            }
+                            //Debug.WriteLine("{0} {1}", reader.BaseStream.Position, reader.BaseStream.Length);
+                        }
+                        if (CancellationPending)
+                        {
+                            result = null;
+                            workerSender.ReportProgress(0);
+                            return;
                         }
                     }
                 }
@@ -55,6 +75,7 @@ namespace ParseTextLib
             {
                 exception = ex;
             }
+            workerSender.ReportProgress(100);
         }
     }
 }

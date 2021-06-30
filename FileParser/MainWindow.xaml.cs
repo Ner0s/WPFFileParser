@@ -37,14 +37,13 @@ namespace FileParser
                 return;
             }
 
-            //BrowseBtn.Visibility = Visibility.Collapsed;
+            BrowseBtn.Visibility = Visibility.Collapsed;
             //FileNameTextBox.Visibility = Visibility.Collapsed;
-            //ProgressBarStatus.Visibility = Visibility.Visible;
-            //CancelBtn.Visibility = Visibility.Visible;
-                   
-            string fileName = openFileDlg.FileName;
-            FileNameTextBox.Text = fileName;
+            ProgressBarStatus.Visibility = Visibility.Visible;
+            CancelBtn.Visibility = Visibility.Visible;
 
+            string fileName = openFileDlg.FileName;
+            FileNameTextBox.Text = new FileInfo(fileName).Name;
             wordCounter = new WordCounter();
 
             // add our event handlers
@@ -54,10 +53,6 @@ namespace FileParser
             // start the worker thread
             wordCounter.RunWorkerAsync(fileName);
                        
-            //ProgressBarStatus.Visibility = Visibility.Collapsed;
-            //CancelBtn.Visibility = Visibility.Collapsed;
-            //BrowseBtn.Visibility = Visibility.Visible;
-            //FileNameTextBox.Visibility = Visibility.Visible;
         }
 
         
@@ -68,25 +63,23 @@ namespace FileParser
                 SaveFileDialog saveFileDlg = new SaveFileDialog();
                 saveFileDlg.DefaultExt = ".txt";
                 saveFileDlg.Filter = "Text documents (.txt)|*.txt";
-           
-                if (saveFileDlg.ShowDialog() != true)
-                {
-                    return;
-                }
 
-                try
+                if (saveFileDlg.ShowDialog() == true)
                 {
-                    using (StreamWriter writer = File.CreateText(saveFileDlg.FileName))
+                    try
                     {
-                        foreach (KeyValuePair<string, uint> pair in wordCounter.result)
+                        using (StreamWriter writer = File.CreateText(saveFileDlg.FileName))
                         {
-                            writer.WriteLine("{0}: {1}", pair.Key, pair.Value);
+                            foreach (KeyValuePair<string, uint> pair in wordCounter.result)
+                            {
+                                writer.WriteLine("{0}: {1}", pair.Key, pair.Value);
+                            }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error: Could not save file to disk. Original error: " + ex.Message);
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error: Could not save file to disk. Original error: " + ex.Message);
+                    }
                 }
             }
             else if (wordCounter.exception != null)
@@ -94,6 +87,10 @@ namespace FileParser
                 MessageBox.Show("Error: Could not process file. Original Error: " + wordCounter.exception.Message);
             }
             wordCounter = null;
+            ProgressBarStatus.Visibility = Visibility.Collapsed;
+            CancelBtn.Visibility = Visibility.Collapsed;
+            BrowseBtn.Visibility = Visibility.Visible;
+            //FileNameTextBox.Visibility = Visibility.Visible;
         }
 
         public void ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -101,6 +98,15 @@ namespace FileParser
             ProgressBarStatus.Value = e.ProgressPercentage;
         }
 
+        private void CancelBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (wordCounter == null)
+            {
+                MessageBox.Show("Error: Not running.");
+                return;
+            }
+            wordCounter.CancelAsync();
+        }
     }
 
     
