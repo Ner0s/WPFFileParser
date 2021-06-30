@@ -2,9 +2,9 @@
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
+using ParseTextLib;
+using System.Collections.Generic;
 
 namespace FileParser
 {
@@ -13,94 +13,101 @@ namespace FileParser
     /// </summary>
     public partial class MainWindow : Window
     {
+        private WordCounter wordCounter;
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        private async void BrowseBtn_Click(object sender, RoutedEventArgs e)
+        private void BrowseBtn_Click(object sender, RoutedEventArgs e)
         {
+            if (wordCounter != null)
+            {
+                MessageBox.Show("Error: Already running.");
+                return;
+            }
 
             // Create OpenFileDialog
             OpenFileDialog openFileDlg = new OpenFileDialog();
-            bool? result = openFileDlg.ShowDialog();
             openFileDlg.DefaultExt = ".txt";
             openFileDlg.Filter = "Text documents (.txt)|*.txt";
-            openFileDlg.InitialDirectory = @"C:\";
-            BrowseBtn.Visibility = Visibility.Collapsed;
-            FileNameTextBox.Visibility = Visibility.Collapsed;
-            Task task = Task.Run(() =>
-                LoadFile(this, result, openFileDlg)
-            );
-            await task;
-            BrowseBtn.Visibility = Visibility.Visible;
-            FileNameTextBox.Visibility = Visibility.Visible;
 
+            if (openFileDlg.ShowDialog() != true)
+            {
+                return;
+            }
+
+            BrowseBtn.Visibility = Visibility.Collapsed;
+            //FileNameTextBox.Visibility = Visibility.Collapsed;
+            ProgressBarStatus.Visibility = Visibility.Visible;
+            CancelBtn.Visibility = Visibility.Visible;
+
+            string fileName = openFileDlg.FileName;
+            FileNameTextBox.Text = new FileInfo(fileName).Name;
+            wordCounter = new WordCounter();
+
+            // add our event handlers
+            wordCounter.RunWorkerCompleted += new RunWorkerCompletedEventHandler(RunWorkerCompleted);
+            wordCounter.ProgressChanged += new ProgressChangedEventHandler(ProgressChanged);
+                            
+            // start the worker thread
+            wordCounter.RunWorkerAsync(fileName);
+                       
         }
 
-        private void LoadFile(MainWindow mainWindow, bool? result, OpenFileDialog openFileDlg)
+        
+        private void RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            if (result == true)
+            if (wordCounter.result != null)
             {
-                try
+                SaveFileDialog saveFileDlg = new SaveFileDialog();
+                saveFileDlg.DefaultExt = ".txt";
+                saveFileDlg.Filter = "Text documents (.txt)|*.txt";
+
+                if (saveFileDlg.ShowDialog() == true)
                 {
-                    ProgressBarStatus.Visibility = Visibility.Visible;
-                    CancelBtn.Visibility = Visibility.Visible;
-                    Stream myStream;
-                    if ((myStream = openFileDlg.OpenFile()) != null)
+                    try
                     {
-                        using (myStream)
+                        using (StreamWriter writer = File.CreateText(saveFileDlg.FileName))
                         {
-                            string filename = openFileDlg.FileName;
-                            FileNameTextBox.Text = filename;
-                            string[] filelines = File.ReadAllLines(filename);
-                            Window_ContentRendered(this, null);
-                            ParseFile(filelines);
+                            foreach (KeyValuePair<string, uint> pair in wordCounter.result)
+                            {
+                                writer.WriteLine("{0}: {1}", pair.Key, pair.Value);
+                            }
                         }
                     }
-                    ProgressBarStatus.Visibility = Visibility.Collapsed;
-                    CancelBtn.Visibility = Visibility.Collapsed;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error: Could not read file from disk. Original error: " + ex.Message);
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error: Could not save file to disk. Original error: " + ex.Message);
+                    }
                 }
             }
-        }
-
-        private void ParseFile(string[] filelines)
-        {
-            foreach (string line in filelines)
+            else if (wordCounter.exception != null)
             {
-                //MessageBox.Show(line);
+                MessageBox.Show("Error: Could not process file. Original Error: " + wordCounter.exception.Message);
             }
+            wordCounter = null;
+            ProgressBarStatus.Visibility = Visibility.Collapsed;
+            CancelBtn.Visibility = Visibility.Collapsed;
+            BrowseBtn.Visibility = Visibility.Visible;
+            //FileNameTextBox.Visibility = Visibility.Visible;
         }
 
-        private void Window_ContentRendered(object sender, EventArgs e)
-        {
-            BackgroundWorker worker = new BackgroundWorker
-            {
-                WorkerReportsProgress = true
-            };
-            worker.DoWork += Worker_DoWork;
-            worker.ProgressChanged += Worker_ProgressChanged;
-
-            worker.RunWorkerAsync();
-        }
-
-        private void Worker_DoWork(object sender, DoWorkEventArgs e)
-        {
-            for (int i = 0; i < 100; i++)
-            {
-                (sender as BackgroundWorker).ReportProgress(i);
-                Thread.Sleep(100);
-            }
-        }
-
-        private void Worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        public void ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             ProgressBarStatus.Value = e.ProgressPercentage;
         }
 
+        private void CancelBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (wordCounter == null)
+            {
+                MessageBox.Show("Error: Not running.");
+                return;
+            }
+            wordCounter.CancelAsync();
+        }
     }
+
+    
 }
