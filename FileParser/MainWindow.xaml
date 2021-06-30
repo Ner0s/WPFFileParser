@@ -5,17 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FileParser"
         mc:Ignorable="d"
-        Title="MainWindow" Height="250" Width="400">
+        Title="MainWindow" Height="300" Width="400">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*" />
-        </Grid.ColumnDefinitions>
-
         <TextBlock HorizontalAlignment="Center" Margin="0,81,0,0" Text="Please select a file.." TextWrapping="Wrap" VerticalAlignment="Top"/>
         <Button Content="Browse" HorizontalAlignment="Left" Margin="243,116,0,0" VerticalAlignment="Top" Click="BrowseBtn_Click" Visibility="Visible" Name="BrowseBtn"/>
         <TextBox HorizontalAlignment="Left" Margin="118,117,0,0" Text="..." TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Name="FileNameTextBox" ToolTipService.ShowOnDisabled="True" IsEnabled="False" Visibility="Visible" />
-        <ProgressBar Height="10" Width="100" Margin="128,121,172,103" Visibility="Collapsed" Minimum="0" Maximum="100" Name="ProgressBarStatus"/>
-        <Button Content="Cancel" HorizontalAlignment="Left" Margin="243,115,0,0" Visibility="Collapsed" VerticalAlignment="Top" Name="CancelBtn"/>
+        <ProgressBar Height="10" Width="100" Margin="128,121,172,153" Visibility="Visible" Minimum="0" Maximum="100" Name="ProgressBarStatus"/>
+        <Button Content="Cancel" HorizontalAlignment="Left" Margin="243,117,0,0" Visibility="Visible" VerticalAlignment="Top" Name="CancelBtn"/>
 
     </Grid>
 </Window>

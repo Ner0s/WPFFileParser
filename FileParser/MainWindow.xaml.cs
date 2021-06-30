@@ -3,9 +3,8 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
+using ParseTextLib;
 
 namespace FileParser
 {
@@ -33,10 +32,10 @@ namespace FileParser
             {
                 try
                 {
-                    BrowseBtn.Visibility = Visibility.Collapsed;
-                    FileNameTextBox.Visibility = Visibility.Collapsed;
-                    ProgressBarStatus.Visibility = Visibility.Visible;
-                    CancelBtn.Visibility = Visibility.Visible;
+                    //BrowseBtn.Visibility = Visibility.Collapsed;
+                    //FileNameTextBox.Visibility = Visibility.Collapsed;
+                    //ProgressBarStatus.Visibility = Visibility.Visible;
+                    //CancelBtn.Visibility = Visibility.Visible;
 
                     Stream myStream;
                     if ((myStream = openFileDlg.OpenFile()) != null)
@@ -63,10 +62,10 @@ namespace FileParser
                         }
                     }
 
-                    ProgressBarStatus.Visibility = Visibility.Collapsed;
-                    CancelBtn.Visibility = Visibility.Collapsed;
-                    BrowseBtn.Visibility = Visibility.Visible;
-                    FileNameTextBox.Visibility = Visibility.Visible;
+                    //ProgressBarStatus.Visibility = Visibility.Collapsed;
+                    //CancelBtn.Visibility = Visibility.Collapsed;
+                    //BrowseBtn.Visibility = Visibility.Visible;
+                    //FileNameTextBox.Visibility = Visibility.Visible;
                 }
                 catch (Exception ex)
                 {
@@ -75,12 +74,6 @@ namespace FileParser
             }
 
         }
-
-        private void ParseLines(string line)
-        {
-            //MessageBox.Show(line);
-        }
-
         private void DoWork(object sender, DoWorkEventArgs e)
         {
             // get a reference to the worker that started this request
@@ -91,7 +84,7 @@ namespace FileParser
 
             for (int i = 0; i < lines.Count(); i++)
             {
-                ParseLines(lines[i]);
+                new ParseLines(lines[i]);
                 workerSender.ReportProgress(i != 0 ? lines.Count() / i : 0);
             }
         }
@@ -107,4 +100,6 @@ namespace FileParser
         }
 
     }
+
+    
 }
