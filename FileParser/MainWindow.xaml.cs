@@ -3,6 +3,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace FileParser
@@ -17,21 +18,34 @@ namespace FileParser
             InitializeComponent();
         }
 
-        private void BrowseBtn_Click(object sender, RoutedEventArgs e)
+        private async void BrowseBtn_Click(object sender, RoutedEventArgs e)
         {
+
             // Create OpenFileDialog
             OpenFileDialog openFileDlg = new OpenFileDialog();
             bool? result = openFileDlg.ShowDialog();
             openFileDlg.DefaultExt = ".txt";
             openFileDlg.Filter = "Text documents (.txt)|*.txt";
             openFileDlg.InitialDirectory = @"C:\";
+            BrowseBtn.Visibility = Visibility.Collapsed;
+            FileNameTextBox.Visibility = Visibility.Collapsed;
+            Task task = Task.Run(() =>
+                LoadFile(this, result, openFileDlg)
+            );
+            await task;
+            BrowseBtn.Visibility = Visibility.Visible;
+            FileNameTextBox.Visibility = Visibility.Visible;
+
+        }
+
+        private void LoadFile(MainWindow mainWindow, bool? result, OpenFileDialog openFileDlg)
+        {
             if (result == true)
             {
                 try
                 {
-                    BrowseBtn.Visibility = Visibility.Collapsed;
-                    FileNameTextBox.Visibility = Visibility.Collapsed;
                     ProgressBarStatus.Visibility = Visibility.Visible;
+                    CancelBtn.Visibility = Visibility.Visible;
                     Stream myStream;
                     if ((myStream = openFileDlg.OpenFile()) != null)
                     {
@@ -40,21 +54,25 @@ namespace FileParser
                             string filename = openFileDlg.FileName;
                             FileNameTextBox.Text = filename;
                             string[] filelines = File.ReadAllLines(filename);
-                            Window_ContentRendered(sender, e);
-                            foreach (string line in filelines)
-                            {
-                                //MessageBox.Show(line);
-                            }
+                            Window_ContentRendered(this, null);
+                            ParseFile(filelines);
                         }
                     }
-                    BrowseBtn.Visibility = Visibility.Visible;
-                    FileNameTextBox.Visibility = Visibility.Visible;
                     ProgressBarStatus.Visibility = Visibility.Collapsed;
+                    CancelBtn.Visibility = Visibility.Collapsed;
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show("Error: Could not read file from disk. Original error: " + ex.Message);
                 }
+            }
+        }
+
+        private void ParseFile(string[] filelines)
+        {
+            foreach (string line in filelines)
+            {
+                //MessageBox.Show(line);
             }
         }
 

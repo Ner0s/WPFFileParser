@@ -14,7 +14,8 @@
         <TextBlock HorizontalAlignment="Center" Margin="0,81,0,0" Text="Please select a file.." TextWrapping="Wrap" VerticalAlignment="Top"/>
         <Button Content="Browse" HorizontalAlignment="Left" Margin="243,116,0,0" VerticalAlignment="Top" Click="BrowseBtn_Click" Visibility="Visible" Name="BrowseBtn"/>
         <TextBox HorizontalAlignment="Left" Margin="118,117,0,0" Text="..." TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Name="FileNameTextBox" ToolTipService.ShowOnDisabled="True" IsEnabled="False" Visibility="Visible" />
-        <ProgressBar Height="10" Width="100" Margin="150,121,150,103" Visibility="Collapsed" Minimum="0" Maximum="100" Name="ProgressBarStatus"/>
+        <ProgressBar Height="10" Width="100" Margin="128,121,172,103" Visibility="Collapsed" Minimum="0" Maximum="100" Name="ProgressBarStatus"/>
+        <Button Content="Cancel" HorizontalAlignment="Left" Margin="243,115,0,0" Visibility="Collapsed" VerticalAlignment="Top" Name="CancelBtn"/>
 
     </Grid>
 </Window>
