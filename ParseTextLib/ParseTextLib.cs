@@ -26,7 +26,7 @@ namespace ParseTextLib
 
             try
             {
-                // get a node list from agrument passed to RunWorkerAsync
+                // get the file name from agrument passed to RunWorkerAsync
                 string fileName = e.Argument as string;
 
                 using (StreamReader reader = File.OpenText(fileName))
@@ -60,7 +60,6 @@ namespace ParseTextLib
                                 ));
                                 lastUpdate = DateTime.Now;
                             }
-                            //Debug.WriteLine("{0} {1}", reader.BaseStream.Position, reader.BaseStream.Length);
                         }
                         if (CancellationPending)
                         {

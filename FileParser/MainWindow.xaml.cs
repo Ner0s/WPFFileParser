@@ -38,7 +38,6 @@ namespace FileParser
             }
 
             BrowseBtn.Visibility = Visibility.Collapsed;
-            //FileNameTextBox.Visibility = Visibility.Collapsed;
             ProgressBarStatus.Visibility = Visibility.Visible;
             CancelBtn.Visibility = Visibility.Visible;
 
@@ -90,7 +89,6 @@ namespace FileParser
             ProgressBarStatus.Visibility = Visibility.Collapsed;
             CancelBtn.Visibility = Visibility.Collapsed;
             BrowseBtn.Visibility = Visibility.Visible;
-            //FileNameTextBox.Visibility = Visibility.Visible;
         }
 
         public void ProgressChanged(object sender, ProgressChangedEventArgs e)
